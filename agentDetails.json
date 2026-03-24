@@ -1,0 +1,66 @@
+{
+  "system_resources": {
+    "total_ram_gb": 20,
+    "total_cpu_cores": 20,
+    "total_network_mbps": 20
+  },
+
+  "agents": [
+    {
+      "id": 11,
+      "name": "Ticket Booker",
+      "priority": 2,
+      "min_cpu": 1,
+      "min_network": 1,
+      "min_ram": 1,
+      "max_cpu": 10,
+      "max_network": 10,
+      "max_ram": 10
+    },
+    {
+      "id": 22,
+      "name": "Real Time Driving Agent",
+      "priority": 1,
+      "min_cpu": 3,
+      "min_network": 3,
+      "min_ram": 3,
+      "max_cpu": 10,
+      "max_network": 10,
+      "max_ram": 10
+    },
+
+    {
+      "id": 33,
+      "name": "Coding Agent",
+      "priority": 3,
+      "min_cpu": 2,
+      "min_network": 2,
+      "min_ram": 2,
+      "max_cpu": 10,
+      "max_network": 10,
+      "max_ram": 10
+    },
+    {
+      "id": 44,
+      "name": "Shopping Agent",
+      "priority": 4,
+      "min_cpu": 0,
+      "min_network": 0,
+      "min_ram": 0,
+      "max_cpu": 10,
+      "max_network": 10,
+      "max_ram": 10
+    },
+    {
+      "id": 55,
+      "name": "Video Editing Agent",
+      "priority": 5,
+      "min_cpu": 0,
+      "min_network": 0,
+      "min_ram": 0,
+      "max_cpu": 10,
+      "max_network": 10,
+      "max_ram": 10
+    }
+  ]
+}
