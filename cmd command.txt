@@ -1,0 +1,3 @@
+cd "d:\IA deliverable project code\ethical-resource-flow-main\ethical-resource-flow-main"
+>> npm install
+>> npm run dev
