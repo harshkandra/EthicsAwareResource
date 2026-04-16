@@ -1,66 +1,62 @@
 {
   "system_resources": {
-    "total_ram_gb": 20,
-    "total_cpu_cores": 20,
-    "total_network_mbps": 20
+    "avilabe": 16
   },
-
   "agents": [
     {
       "id": 11,
-      "name": "Ticket Booker",
-      "priority": 2,
-      "min_cpu": 1,
-      "min_network": 1,
-      "min_ram": 1,
-      "max_cpu": 10,
-      "max_network": 10,
-      "max_ram": 10
+      "name": "Agent 1",
+      "priority_old": 1,
+      "priority_new": 0,
+      "waiting": 6,
+      "fullfilled": 5,
+      "demand": 7,
+      "allocated": 0,
+      "bid": 1.0324477768370746
     },
     {
       "id": 22,
-      "name": "Real Time Driving Agent",
-      "priority": 1,
-      "min_cpu": 3,
-      "min_network": 3,
-      "min_ram": 3,
-      "max_cpu": 10,
-      "max_network": 10,
-      "max_ram": 10
+      "name": "Agent 2",
+      "priority_old": 1,
+      "priority_new": 0,
+      "waiting": 6,
+      "fullfilled": 3,
+      "demand": 0,
+      "allocated": 0,
+      "bid": 3.0081023180519084
     },
-
     {
       "id": 33,
-      "name": "Coding Agent",
-      "priority": 3,
-      "min_cpu": 2,
-      "min_network": 2,
-      "min_ram": 2,
-      "max_cpu": 10,
-      "max_network": 10,
-      "max_ram": 10
+      "name": "Agent 3",
+      "priority_old": 3,
+      "priority_new": 0,
+      "waiting": 5,
+      "fullfilled": 5,
+      "demand": 4,
+      "allocated": 0,
+      "bid": -0.5153584350984695
     },
     {
       "id": 44,
-      "name": "Shopping Agent",
-      "priority": 4,
-      "min_cpu": 0,
-      "min_network": 0,
-      "min_ram": 0,
-      "max_cpu": 10,
-      "max_network": 10,
-      "max_ram": 10
+      "name": "Agent 4",
+      "priority_old": 5,
+      "priority_new": 0,
+      "waiting": 5,
+      "fullfilled": 4,
+      "demand": 9,
+      "allocated": 0,
+      "bid": 0.2851494308763501
     },
     {
       "id": 55,
-      "name": "Video Editing Agent",
-      "priority": 5,
-      "min_cpu": 0,
-      "min_network": 0,
-      "min_ram": 0,
-      "max_cpu": 10,
-      "max_network": 10,
-      "max_ram": 10
+      "name": "Agent 5",
+      "priority_old": 4,
+      "priority_new": 0,
+      "waiting": 5,
+      "fullfilled": 5,
+      "demand": 16,
+      "allocated": 16,
+      "bid": 1.4302975201637025
     }
   ]
 }

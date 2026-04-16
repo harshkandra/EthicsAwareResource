@@ -1,138 +1,127 @@
 import json
+import random
+
+FILE_PATH = "agentDetails.json"
 
 
-def load_agent_config():
-    with open("agentDetails.json", "r") as f:
+def load_data():
+    with open(FILE_PATH, "r") as f:
         return json.load(f)
 
 
-def compute_scores(requests, agents):
-
-    scores = []
-
-    for i, agent in enumerate(agents):
-
-        req = requests[i]
-
-        priority = agent["priority"]
-
-        # demand-based moral score
-        demand = req["cpu"] + req["ram"] + req["net"]
-
-        score = demand * (1 / priority)
-
-        scores.append(score)
-
-    return scores
+def save_data(data):
+    with open(FILE_PATH, "w") as f:
+        json.dump(data, f, indent=2)
 
 
-def allocate_resource(requests, agents, total, resource):
-
-    # Step 1: give minimum
-    allocation = [
-        agent[f"min_{resource}"] for agent in agents
-    ]
-
-    remaining = total - sum(allocation)
-
-    if remaining <= 0:
-        return allocation
-
-    # Step 2: requested extras
-    requested_extra = []
-
-    for i, agent in enumerate(agents):
-
-        req_key = resource if resource != "network" else "net"
-        req = requests[i][req_key]
-        min_v = agent[f"min_{resource}"]
-
-        extra = max(0, req - min_v)
-        requested_extra.append(extra)
-
-    # Step 3: normalize extras to remaining
-    total_extra = sum(requested_extra)
-
-    if total_extra == 0:
-        return allocation
-
-    scaled_extra = [
-        (x / total_extra) * remaining
-        for x in requested_extra
-    ]
-
-    # Step 4: add but clamp to max
-    for i, agent in enumerate(agents):
-
-        max_v = agent[f"max_{resource}"]
-
-        allocation[i] += scaled_extra[i]
-
-        if allocation[i] > max_v:
-            allocation[i] = max_v
-
-    # Step 5: redistribute leftover
+def resolve_priority_conflicts(agents):
     while True:
+        seen = {}
+        conflict_found = False
 
-        used = sum(allocation)
-        leftover = total - used
+        for agent in agents:
+            p = agent["priority_new"]
 
-        if leftover <= 0:
+            if p in seen:
+                # lower priority_old gets +1
+                if agent["priority_old"] < seen[p]["priority_old"]:
+                    agent["priority_new"] += 1
+                else:
+                    seen[p]["priority_new"] += 1
+
+                conflict_found = True
+                break
+            else:
+                seen[p] = agent
+
+        if not conflict_found:
             break
 
-        eligible = []
 
-        for i, agent in enumerate(agents):
-            if allocation[i] < agent[f"max_{resource}"]:
-                eligible.append(i)
+def compute_bid(agent):
+    # avoid division by zero
+    effective_priority = max(agent["priority_old"], 1)
 
-        if not eligible:
-            break
+    base = 1 / effective_priority
+    waiting_boost = agent["waiting"]
+    fulfilled_penalty = agent["fullfilled"]
 
-        share = leftover / len(eligible)
+    randomness = random.uniform(0, 0.3)
 
-        for i in eligible:
-
-            max_v = agents[i][f"max_{resource}"]
-
-            allocation[i] += share
-
-            if allocation[i] > max_v:
-                allocation[i] = max_v
-
-    return allocation
+    return base + waiting_boost - fulfilled_penalty + randomness
 
 
 def allocate_resources(request_tuple):
+    data = load_data()
 
-    config = load_agent_config()
+    total_available = data["system_resources"]["avilabe"]
+    agents = data["agents"]
 
-    agents = config["agents"]
-    system = config["system_resources"]
+    # attach demand + reset allocation
+    for i, agent in enumerate(agents):
+        agent["demand"] = request_tuple[i]
+        agent["allocated"] = 0
 
-    cpu = allocate_resource(
-        request_tuple,
-        agents,
-        system["total_cpu_cores"],
-        "cpu"
-    )
+    # ⚔️ STEP 1: compute bids
+    for agent in agents:
+        agent["bid"] = compute_bid(agent)
 
-    ram = allocate_resource(
-        request_tuple,
-        agents,
-        system["total_ram_gb"],
-        "ram"
-    )
+    # ⚔️ STEP 2: sort bidders by highest bid
+    agents_sorted = sorted(agents, key=lambda x: x["bid"], reverse=True)
 
-    net = allocate_resource(
-        request_tuple,
-        agents,
-        system["total_network_mbps"],
-        "network"
-    )
+    remaining = total_available
+    allocated_agents = set()
 
-    return (
-        tuple(round(x) for x in cpu),
-        tuple(round(x) for x in ram),
-        tuple(round(x) for x in net)
-    )
+    # ⚔️ STEP 3: negotiation loop
+    for agent in agents_sorted:
+
+        demand = agent["demand"]
+
+        # skip if demand > remaining (as per rule)
+        if demand > remaining:
+            continue
+
+        # allocate full demand (all-or-nothing)
+        agent["allocated"] = demand
+        remaining -= demand
+
+        allocated_agents.add(agent["id"])
+
+        # stop if no resource left
+        if remaining == 0:
+            break
+
+    # STEP 4: update waiting & fulfilled
+    for agent in agents:
+        if agent["allocated"] == 0:
+            agent["waiting"] += 1
+
+        if agent["allocated"] == agent["demand"] and agent["demand"] > 0:
+            agent["fullfilled"] += 1
+
+    # STEP 5: compute new priority
+    for agent in agents:
+        agent["priority_new"] = (
+            agent["priority_old"]
+            - agent["waiting"]
+            + agent["fullfilled"]
+        )
+
+    # STEP 6: resolve conflicts
+    resolve_priority_conflicts(agents)
+
+    # STEP 7: update priorities (avoid ≤0)
+    for agent in agents:
+        agent["priority_old"] = max(agent["priority_new"], 1)
+        agent["priority_new"] = 0
+
+    # restore original order (by id)
+    agents.sort(key=lambda x: x["id"])
+
+    # save updated state
+    save_data(data)
+
+    # return allocation tuple
+    allocation_tuple = tuple(agent["allocated"] for agent in agents)
+
+    return allocation_tuple
