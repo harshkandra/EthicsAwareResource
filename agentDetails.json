@@ -8,55 +8,55 @@
       "name": "Agent 1",
       "priority_old": 1,
       "priority_new": 0,
-      "waiting": 113,
-      "fullfilled": 83,
-      "demand": 6,
+      "waiting": 20,
+      "fullfilled": 5,
+      "demand": 14,
       "allocated": 0,
-      "bid": 30.25232275834167
+      "bid": 15.197740560375527
     },
     {
       "id": 22,
       "name": "Agent 2",
       "priority_old": 1,
       "priority_new": 0,
-      "waiting": 113,
-      "fullfilled": 83,
-      "demand": 4,
-      "allocated": 0,
-      "bid": 30.255760479297315
+      "waiting": 149,
+      "fullfilled": 109,
+      "demand": 7,
+      "allocated": 7,
+      "bid": 42.202314636932286
     },
     {
       "id": 33,
       "name": "Agent 3",
       "priority_old": 1,
       "priority_new": 0,
-      "waiting": 113,
-      "fullfilled": 83,
-      "demand": 9,
-      "allocated": 9,
-      "bid": 32.131084442956244
+      "waiting": 149,
+      "fullfilled": 109,
+      "demand": 4,
+      "allocated": 4,
+      "bid": 42.15354928820237
     },
     {
       "id": 44,
-      "name": "Agent 4",
+      "name": "Agent 44444",
       "priority_old": 1,
       "priority_new": 0,
-      "waiting": 113,
-      "fullfilled": 83,
-      "demand": 4,
-      "allocated": 4,
-      "bid": 32.12062196804968
+      "waiting": 149,
+      "fullfilled": 109,
+      "demand": 10,
+      "allocated": 0,
+      "bid": 40.25635839654127
     },
     {
       "id": 55,
       "name": "Agent 5",
       "priority_old": 1,
       "priority_new": 0,
-      "waiting": 114,
-      "fullfilled": 82,
-      "demand": 15,
+      "waiting": 149,
+      "fullfilled": 109,
+      "demand": 8,
       "allocated": 0,
-      "bid": 32.1145342812732
+      "bid": 40.24518865052524
     }
   ]
 }
