@@ -17,12 +17,12 @@ ETHICS_CONFIG = {
 
 
 def load_data():
-    with open(FILE_PATH, "r") as f:
+    with open(FILE_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_data(data):
-    with open(FILE_PATH, "w") as f:
+    with open(FILE_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
@@ -90,71 +90,77 @@ def allocate_resources(request_tuple):
     total_available = data["system_resources"]["avilabe"]
     agents = data["agents"]
 
-    # attach demand + reset allocation
     for i, agent in enumerate(agents):
         agent["demand"] = request_tuple[i]
         agent["allocated"] = 0
+        agent.setdefault("waiting", 0)
+        agent.setdefault("fullfilled", 0)
+        agent.setdefault("priority_old", 1)
+        agent.setdefault("priority_new", 0)
+        agent.setdefault("starvation_count", 0)
+        agent.setdefault("need_score", 0)
+        agent.setdefault("fairness_score", 0)
+        agent.setdefault("ethics_score", 0)
 
-    # ⚔️ STEP 1: compute bids
     for agent in agents:
         agent["bid"] = compute_bid(agent)
 
-    # ⚔️ STEP 2: sort bidders by highest bid
     agents_sorted = sorted(agents, key=lambda x: x["bid"], reverse=True)
-
     remaining = total_available
-    allocated_agents = set()
 
-    # ⚔️ STEP 3: negotiation loop
     for agent in agents_sorted:
+        if agent["starvation_count"] >= ETHICS_CONFIG["starvation_threshold"]:
+            demand = agent["demand"]
+            if demand > 0 and demand <= remaining:
+                agent["allocated"] = demand
+                remaining -= demand
 
-        demand = agent["demand"]
-
-        # skip if demand > remaining (as per rule)
-        if demand > remaining:
+    for agent in agents_sorted:
+        if agent["allocated"] > 0:
             continue
 
-        # allocate full demand (all-or-nothing)
+        demand = agent["demand"]
+        if demand <= 0 or demand > remaining:
+            continue
+
         agent["allocated"] = demand
         remaining -= demand
-
-        allocated_agents.add(agent["id"])
-
-        # stop if no resource left
         if remaining == 0:
             break
 
-    # STEP 4: update waiting & fulfilled
     for agent in agents:
         if agent["allocated"] == 0:
             agent["waiting"] += 1
+            agent["starvation_count"] += 1
+        else:
+            agent["starvation_count"] = 0
 
         if agent["allocated"] == agent["demand"] and agent["demand"] > 0:
             agent["fullfilled"] += 1
 
-    # STEP 5: compute new priority
     for agent in agents:
-        agent["priority_new"] = (
+        fairness_balance = agent["waiting"] - agent["fullfilled"]
+        agent["fairness_score"] = fairness_balance
+        agent["ethics_score"] = (
             agent["priority_old"]
-            - agent["waiting"]
-            + agent["fullfilled"]
+            + fairness_balance * ETHICS_CONFIG["wait_weight"]
+            + agent["demand"] * ETHICS_CONFIG["need_weight"]
+            - agent["fullfilled"] * ETHICS_CONFIG["fulfilled_penalty"]
         )
 
-    # STEP 6: resolve conflicts
+        agent["priority_new"] = max(
+            min(agent["ethics_score"], ETHICS_CONFIG["max_priority"]),
+            ETHICS_CONFIG["min_priority"],
+        )
+
     resolve_priority_conflicts(agents)
 
-    # STEP 7: update priorities (avoid ≤0)
     for agent in agents:
-        agent["priority_old"] = max(agent["priority_new"], -200)
+        agent["priority_old"] = agent["priority_new"]
         agent["priority_new"] = 0
 
-    # restore original order (by id)
     agents.sort(key=lambda x: x["id"])
-
-    # save updated state
     save_data(data)
 
-    # return allocation tuple
     allocation_tuple = tuple(agent["allocated"] for agent in agents)
-
     return allocation_tuple

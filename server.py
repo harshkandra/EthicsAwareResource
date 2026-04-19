@@ -5,7 +5,7 @@ from websockets import serve
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 
-from backendAllocater import allocate_resources, load_data
+from ethicalAllocater import allocate_resources, load_data
 
 NUM_AGENTS = 5
 
@@ -19,8 +19,51 @@ config = {
 clients = set()
 
 
+def get_system_resource_limit():
+    """Load system resource limit from agentDetails.json"""
+    try:
+        data = load_data()
+        return data.get("system_resources", {}).get("avilabe", 16)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return 16  # Fallback to default
+
+
 def generate_request_tuple():
-    return tuple(random.randint(0, 16) for _ in range(NUM_AGENTS))
+    limit = get_system_resource_limit()
+    return tuple(random.randint(0, limit) for _ in range(NUM_AGENTS))
+
+
+def explain_agent_reason(agent):
+    reasons = []
+    demand = agent.get("demand", 0)
+    allocation = agent.get("allocated", 0)
+    ethics_score = round(agent.get("ethics_score", 0), 2)
+    waiting = agent.get("waiting", 0)
+    fulfilled = agent.get("fullfilled", 0)
+    priority = agent.get("priority_old", 1)
+
+    reasons.append(f"Priority score: {priority}.")
+    reasons.append(f"Ethical score: {ethics_score}.")
+
+    if demand <= 0:
+        reasons.append("No demand this round.")
+    elif allocation == demand:
+        reasons.append("Demand was fully satisfied.")
+        reasons.append("The agent had a strong ethical bid based on need and waiting history.")
+        if waiting > 0:
+            reasons.append("Waiting history increased future fairness priority.")
+    elif allocation == 0:
+        reasons.append("No resources remained after higher-priority agents were allocated.")
+        reasons.append("Current ethical bid was not enough this round.")
+        if waiting > 0:
+            reasons.append("Waiting will increase its chance in later rounds.")
+    else:
+        reasons.append("Allocated partially because remaining resources were limited.")
+
+    if fulfilled > 0:
+        reasons.append("Past fulfilment reduced priority slightly to preserve fairness.")
+
+    return reasons
 
 
 # ---------- WEBSOCKET ----------
@@ -46,17 +89,24 @@ async def simulation_loop():
 
             data = load_data()
             agents = data["agents"]
+            available_resources = data.get("system_resources", {}).get("avilabe", 0)
 
             payload = {
                 "round": t,
                 "request": list(request),
                 "allocation": list(allocation),
+                "available_resources": available_resources,
                 "agents": [
                     {
                         "name": a["name"],
                         "waiting": a["waiting"],
                         "fullfilled": a["fullfilled"],
-                        "bid": round(a.get("bid", 0), 3)
+                        "bid": round(a.get("bid", 0), 3),
+                        "demand": a["demand"],
+                        "allocated": a["allocated"],
+                        "priority": a.get("priority_old", 1),
+                        "ethics_score": round(a.get("ethics_score", 0), 2),
+                        "reasons": explain_agent_reason(a),
                     }
                     for a in agents
                 ]
@@ -119,6 +169,25 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(b"Started")
 
+        else:
+            self.send_response(404)
+            self._set_cors_headers()
+            self.end_headers()
+
+    def do_GET(self):
+        if self.path == "/system-state":
+            data = load_data()
+            available_resources = data.get("system_resources", {}).get("avilabe", 0)
+            
+            response = {
+                "available_resources": available_resources
+            }
+            
+            self.send_response(200)
+            self._set_cors_headers()
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode())
         else:
             self.send_response(404)
             self._set_cors_headers()
