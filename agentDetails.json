@@ -1,62 +1,82 @@
 {
   "system_resources": {
-    "avilabe": 16
+    "avilabe": 200
   },
   "agents": [
     {
       "id": 11,
       "name": "Agent 1",
-      "priority_old": 1,
+      "priority_old": 100,
       "priority_new": 0,
-      "waiting": 20,
-      "fullfilled": 5,
-      "demand": 14,
-      "allocated": 0,
-      "bid": 15.197740560375527
+      "waiting": 14,
+      "fullfilled": 31,
+      "demand": 184,
+      "allocated": 184,
+      "bid": 181.64734393816335,
+      "starvation_count": 0,
+      "need_score": 184,
+      "fairness_score": -17,
+      "ethics_score": 180.01
     },
     {
       "id": 22,
       "name": "Agent 2",
-      "priority_old": 1,
+      "priority_old": 93.1,
       "priority_new": 0,
-      "waiting": 149,
-      "fullfilled": 109,
-      "demand": 7,
-      "allocated": 7,
-      "bid": 42.202314636932286
+      "waiting": 15,
+      "fullfilled": 30,
+      "demand": 33,
+      "allocated": 0,
+      "bid": 92.16797067781725,
+      "starvation_count": 1,
+      "need_score": 33,
+      "fairness_score": -15,
+      "ethics_score": 93.1
     },
     {
       "id": 33,
       "name": "Agent 3",
-      "priority_old": 1,
+      "priority_old": 70.20000000000002,
       "priority_new": 0,
-      "waiting": 149,
-      "fullfilled": 109,
-      "demand": 4,
-      "allocated": 4,
-      "bid": 42.15354928820237
+      "waiting": 14,
+      "fullfilled": 31,
+      "demand": 52,
+      "allocated": 0,
+      "bid": 69.3386222052789,
+      "starvation_count": 2,
+      "need_score": 52,
+      "fairness_score": -17,
+      "ethics_score": 70.20000000000002
     },
     {
       "id": 44,
       "name": "Agent 44444",
-      "priority_old": 1,
+      "priority_old": 100.01,
       "priority_new": 0,
-      "waiting": 149,
-      "fullfilled": 109,
-      "demand": 10,
+      "waiting": 18,
+      "fullfilled": 27,
+      "demand": 128,
       "allocated": 0,
-      "bid": 40.25635839654127
+      "bid": 166.2601821843607,
+      "starvation_count": 1,
+      "need_score": 128,
+      "fairness_score": -9,
+      "ethics_score": 167.11
     },
     {
       "id": 55,
       "name": "Agent 5",
-      "priority_old": 1,
+      "priority_old": 62.32000000000002,
       "priority_new": 0,
-      "waiting": 149,
-      "fullfilled": 109,
-      "demand": 8,
+      "waiting": 17,
+      "fullfilled": 28,
+      "demand": 37,
       "allocated": 0,
-      "bid": 40.24518865052524
+      "bid": 61.358127184286744,
+      "starvation_count": 1,
+      "need_score": 37,
+      "fairness_score": -11,
+      "ethics_score": 62.32000000000002
     }
   ]
 }

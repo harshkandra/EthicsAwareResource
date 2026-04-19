@@ -1,0 +1,62 @@
+{
+  "system_resources": {
+    "avilabe": 16
+  },
+  "agents": [
+    {
+      "id": 11,
+      "name": "Agent 1",
+      "priority_old": 1,
+      "priority_new": 0,
+      "waiting": 0,
+      "fullfilled": 0,
+      "demand": 0,
+      "allocated": 0,
+      "bid": 0
+    },
+    {
+      "id": 22,
+      "name": "Agent 2",
+      "priority_old": 2,
+      "priority_new": 0,
+      "waiting": 0,
+      "fullfilled": 0,
+      "demand": 0,
+      "allocated": 0,
+      "bid": 0
+    },
+    {
+      "id": 33,
+      "name": "Agent 3",
+      "priority_old": 3,
+      "priority_new": 0,
+      "waiting": 0,
+      "fullfilled": 0,
+      "demand": 0,
+      "allocated": 0,
+      "bid": 0
+    },
+    {
+      "id": 44,
+      "name": "Agent 44444",
+      "priority_old": 4,
+      "priority_new": 0,
+      "waiting": 0,
+      "fullfilled": 0,
+      "demand": 0,
+      "allocated": 0,
+      "bid": 0
+    },
+    {
+      "id": 55,
+      "name": "Agent 5",
+      "priority_old": 5,
+      "priority_new": 0,
+      "waiting": 0,
+      "fullfilled": 0,
+      "demand": 0,
+      "allocated": 0,
+      "bid": 0
+    }
+  ]
+}

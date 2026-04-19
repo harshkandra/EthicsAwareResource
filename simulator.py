@@ -1,7 +1,7 @@
 import json
 import random
 import time
-from backendAllocater import allocate_resources
+from ethicalAllocater import allocate_resources
 
 INTERVAL_SECONDS = 1
 TOTAL_STEPS = 20
@@ -10,8 +10,19 @@ NUM_AGENTS = 5
 OUTPUT_FILE = "output.json"
 
 
+def get_system_resource_limit():
+    """Load system resource limit from agentDetails.json"""
+    try:
+        with open("agentDetails.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data.get("system_resources", {}).get("avilabe", 16)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return 16  # Fallback to default
+
+
 def generate_request_tuple():
-    return tuple(random.randint(0, 16) for _ in range(NUM_AGENTS))
+    limit = get_system_resource_limit()
+    return tuple(random.randint(0, limit) for _ in range(NUM_AGENTS))
 
 
 def run():

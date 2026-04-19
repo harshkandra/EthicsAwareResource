@@ -27,12 +27,18 @@ interface BackendAgentData {
   waiting: number;
   fullfilled: number;
   bid: number;
+  demand: number;
+  allocated: number;
+  priority: number;
+  ethics_score: number;
+  reasons: string[];
 }
 
 interface BackendPayload {
   round: number;
   request: number[];
   allocation: number[];
+  available_resources: number;
   agents: BackendAgentData[];
 }
 
@@ -46,6 +52,10 @@ function mapPayloadToRoundResult(payload: BackendPayload): RoundResult {
       waiting: agent.waiting,
       fulfilled: agent.fullfilled,
       bid: agent.bid,
+      demand: agent.demand,
+      priority: agent.priority,
+      ethicsScore: agent.ethics_score,
+      reasons: agent.reasons ?? [],
     })),
   };
 }
@@ -56,6 +66,7 @@ function Index() {
   const [results, setResults] = useState<RoundResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [socketStatus, setSocketStatus] = useState("connecting");
+  const [availableResources, setAvailableResources] = useState(0);
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8765");
@@ -65,12 +76,23 @@ function Index() {
     ws.onclose = () => setSocketStatus("closed");
     ws.onmessage = (event) => {
       const payload = JSON.parse(event.data) as BackendPayload;
+      setAvailableResources(payload.available_resources);
       setResults((prev) => [...prev, mapPayloadToRoundResult(payload)]);
     };
 
     return () => {
       ws.close();
     };
+  }, []);
+
+  useEffect(() => {
+    // Fetch initial system state
+    fetch("http://localhost:8001/system-state")
+      .then((res) => res.json())
+      .then((data) => {
+        setAvailableResources(data.available_resources);
+      })
+      .catch((err) => console.error("Failed to fetch system state:", err));
   }, []);
 
   const handleRun = useCallback(() => {
@@ -119,7 +141,8 @@ function Index() {
                 Ethics Aware Resource Distribution
               </h1>
               <p className="text-sm text-stone-500">
-                Total Resource: <span className="font-semibold text-stone-700">16</span>
+                Total Resource:{" "}
+                <span className="font-semibold text-stone-700">{availableResources || 0}</span>
                 <span className="ml-3 text-xs uppercase tracking-wide text-stone-500">
                   {socketStatus}
                 </span>

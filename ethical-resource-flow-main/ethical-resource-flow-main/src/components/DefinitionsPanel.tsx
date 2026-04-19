@@ -4,7 +4,7 @@ const definitions = [
   { term: "Waiting", desc: "Number of rounds agent got 0 resource", color: "bg-red-400" },
   { term: "Fulfilled", desc: "Number of times demand fully satisfied", color: "bg-emerald-400" },
   { term: "Bid", desc: "Competitive strength in negotiation", color: "bg-blue-400" },
-  { term: "Utility", desc: "Priority-based fairness function", color: "bg-amber-400" },
+  { term: "Ethics Score", desc: "Agent's ethical behavior score", color: "bg-amber-400" },
 ];
 
 export function DefinitionsPanel() {
