@@ -2,7 +2,7 @@
 
 # ⚖️ Ethical Resource Flow
 
-### A Utility-Based Intelligent Agent for Ethical Resource Allocation
+### A Multi-Agent Resource Negotiation Simulator
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
@@ -10,46 +10,38 @@
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-38BDF8?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
-*A real-time simulation platform demonstrating how a **Utility-Based Intelligent Agent** allocates limited resources ethically while balancing fairness, efficiency, and priority.*
-
+*A real-time simulator where independent coding, ML, and DevOps agents negotiate for shared CPU, memory, GPUs, network, and storage while protected capacity limits are enforced.*
 
 
 ---
 
 # Overview
 
-Ethical Resource Flow simulates resource allocation among multiple competing agents. Instead of following predefined rules, the system employs a **Utility-Based Intelligent Agent** that evaluates every possible allocation and selects the one that maximizes an ethical utility score.
+Ethical Resource Flow simulates three independent workload agents. Each agent has its own objective, resource requirements, minimum guarantees, workload pattern, negotiation strategy, and memory of past outcomes. The agents submit changing requests and weighted bids; a coordinator protects minimums, distributes remaining resources by strategy and fairness, and records each agent's response for the next round.
 
-The project provides an interactive dashboard where each simulation round is streamed live using **HTTP** and **WebSocket**, allowing users to visualize every decision made by the intelligent agent.
+LangGraph orchestrates each round as a proposal → allocation → review workflow. Agent policies and the allocator remain simple deterministic Python; no LLM, external AI service, or API key is required. Every allocation is capped by the configured infrastructure capacity.
 
 ---
 
 # Features
 
-- Utility-Based Intelligent Agent
-- Ethical resource allocation using utility scoring
-- Fairness and efficiency aware decision making
+- Three autonomous agents with independent workloads and objectives
+- Strategy-weighted negotiation with adaptive bids and workload requests
+- Protected minimum allocations and hard per-resource capacity limits
+- Jain fairness index and infrastructure utilization metrics
 - Real-time simulation updates via WebSocket
 - Interactive React dashboard
 - Configurable simulation rounds and interval
-- Live visualization of agent state and allocation reasoning
+- Live proposals, allocations, negotiation feedback, and agent memory
 - Modular architecture with separate frontend and backend
 
 ---
 
-# Why Utility-Based Agent?
+# Agent Policies and Orchestration
 
-Unlike rule-based systems, ethical resource allocation requires balancing multiple competing objectives.
+Each basic agent autonomously proposes demand, bids according to its objective-specific resource weights, and raises its bid after unmet requests. Coding favors CPU and storage throughput; ML prioritizes GPU and memory; DevOps prioritizes network and storage reliability. The coordinator allocates feasible per-agent minimums first, then shares each remaining resource according to strategy-weighted marginal utility with a diminishing-return fairness adjustment.
 
-The intelligent agent evaluates:
-
-- Fairness
-- Resource availability
-- Agent priority
-- Waiting time
-- Allocation efficiency
-
-Rather than following hardcoded rules, the agent computes a utility score for each possible allocation and selects the action that maximizes the overall system utility.
+The supplied targets sum to 1,150 Mbps of network and 11,000 IOPS, exceeding the available 1,000 Mbps and 10,000 IOPS. Therefore, the configured protected floors are 50% of each agent's target (rounded up for integer resources); they are feasible together and the remaining capacity is negotiated. These minimums can be tuned in `agentDetails.json`.
 
 ---
 # High-Level Architecture
@@ -81,13 +73,12 @@ Rather than following hardcoded rules, the agent computes a utility score for ea
 
 # How It Works
 
-1. Load agent and resource information from **agentDetails.json**.
-2. Generate a new demand request for every agent.
-3. Compute ethical bids using **ethicalAllocater.py**.
-4. Allocate resources based on utility while balancing fairness and efficiency.
-5. Update each agent's state including waiting, fulfilled, and priority values.
-6. Stream simulation updates through **server.py** using HTTP and WebSocket.
-7. Display round-by-round visualization in the React dashboard.
+1. Load capacities and agent policies from **agentDetails.json**.
+2. Each agent independently proposes a workload-sized request and objective-weighted bid.
+3. LangGraph runs the round through proposal, allocation, and review nodes.
+4. The allocator protects minimums, then negotiates remaining capacity by resource and marginal utility.
+5. Agents review the outcome; unmet demand increases their next-round bid and can change requests.
+6. Report per-resource usage, fairness, utilization, and explanations, then stream the round to the dashboard.
 
 
 
@@ -120,21 +111,14 @@ Rather than following hardcoded rules, the agent computes a utility score for ea
 ```
 ethical-resource-flow/
 │
-├── src/                     # React Frontend
-│   ├── components/
-│   ├── routes/
-│   ├── ui/
-│   └── index.tsx
+├── ethical-resource-flow-main/
+│   └── code/                          # React frontend (package.json, src/)
 │
-├── ethicalAllocater.py      # Utility-based allocation engine
-├── server.py                # HTTP & WebSocket server
-├── simulator.py             # Simulation runner
-├── run.py                   # Application launcher
+├── agent_system.py          # Agent policies, negotiation, and capacity-safe allocator
+├── server.py                # HTTP API and WebSocket event stream
+├── run.py                   # Starts backend and frontend
 │
-├── agentDetails.json        # Agent & resource data
-├── output.json              # Latest simulation output
-│
-├── package.json
+├── agentDetails.json        # Objectives, targets, minimums, and weights
 ├── requirements.txt
 └── README.md
 ```
@@ -154,9 +138,9 @@ ethical-resource-flow/
 ### Backend
 
 - Python
-- FastAPI
-- HTTP APIs
-- WebSocket
+- LangGraph
+- HTTP server and API
+- WebSocket event stream
 
 ### Data
 
@@ -166,19 +150,31 @@ ethical-resource-flow/
 
 # Running the Project
 
-### Backend
+### Run both applications (from the repository root)
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python run.py
 ```
 
-### Frontend
+`run.py` starts the Python API/WebSocket backend and the Vite frontend.
+
+To run them separately:
+
+### Backend (repository root)
+
+```bash
+python server.py
+```
+
+### Frontend (in `ethical-resource-flow-main/code`)
 
 ```bash
 npm install
 npm run dev
 ```
+
+Open the Vite URL shown in the frontend terminal. Keep the backend running on HTTP port 8001 and WebSocket port 8765.
 
 ---
 

@@ -1,212 +1,149 @@
 import asyncio
 import json
-import random
-from websockets import serve
-from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import Any
+from websockets import serve
+from websockets.exceptions import ConnectionClosed
 
-from ethicalAllocater import allocate_resources, load_data
+from agent_system import create_simulation, load_configuration, run_round
 
-NUM_AGENTS = 5
-
-# shared config
-config = {
-    "rounds": 20,
-    "interval": 1,
-    "running": False
-}
-
-clients = set()
+config_lock = threading.Lock()
+config: dict[str, Any] = {"rounds": 5, "interval": 1.0, "running": False}
+clients: set[Any] = set()
 
 
-def get_system_resource_limit():
-    """Load system resource limit from agentDetails.json"""
-    try:
-        data = load_data()
-        return data.get("system_resources", {}).get("avilabe", 16)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return 16  # Fallback to default
+async def broadcast(payload: dict[str, Any]) -> None:
+    message = json.dumps(payload)
+    for websocket in list(clients):
+        try:
+            await websocket.send(message)
+        except ConnectionClosed:
+            clients.discard(websocket)
 
 
-def generate_request_tuple():
-    limit = get_system_resource_limit()
-    return tuple(random.randint(0, limit) for _ in range(NUM_AGENTS))
-
-
-def explain_agent_reason(agent):
-    reasons = []
-    demand = agent.get("demand", 0)
-    allocation = agent.get("allocated", 0)
-    ethics_score = round(agent.get("ethics_score", 0), 2)
-    waiting = agent.get("waiting", 0)
-    fulfilled = agent.get("fullfilled", 0)
-    priority = agent.get("priority_old", 1)
-
-    reasons.append(f"Priority score: {priority}.")
-    reasons.append(f"Ethical score: {ethics_score}.")
-
-    if demand <= 0:
-        reasons.append("No demand this round.")
-    elif allocation == demand:
-        reasons.append("Demand was fully satisfied.")
-        reasons.append("The agent had a strong ethical bid based on need and waiting history.")
-        if waiting > 0:
-            reasons.append("Waiting history increased future fairness priority.")
-    elif allocation == 0:
-        reasons.append("No resources remained after higher-priority agents were allocated.")
-        reasons.append("Current ethical bid was not enough this round.")
-        if waiting > 0:
-            reasons.append("Waiting will increase its chance in later rounds.")
-    else:
-        reasons.append("Allocated partially because remaining resources were limited.")
-
-    if fulfilled > 0:
-        reasons.append("Past fulfilment reduced priority slightly to preserve fairness.")
-
-    return reasons
-
-
-# ---------- WEBSOCKET ----------
-async def ws_handler(websocket):
+async def ws_handler(websocket: Any) -> None:
     clients.add(websocket)
-    print("Client connected")
-
     try:
-        while True:
-            await asyncio.sleep(1)
+        await websocket.wait_closed()
     finally:
-        clients.remove(websocket)
+        clients.discard(websocket)
 
 
-# ---------- SIMULATION ----------
-async def simulation_loop():
-    t = 0
+def is_running() -> bool:
+    with config_lock:
+        return bool(config["running"])
 
+
+async def simulation_loop() -> None:
     while True:
-        if config["running"]:
-            request = generate_request_tuple()
-            allocation = allocate_resources(request)
+        with config_lock:
+            run_config = config.copy() if config["running"] else None
+        if run_config is None:
+            await asyncio.sleep(0.25)
+            continue
 
-            data = load_data()
-            agents = data["agents"]
-            available_resources = data.get("system_resources", {}).get("avilabe", 0)
-
-            payload = {
-                "round": t,
-                "request": list(request),
-                "allocation": list(allocation),
-                "available_resources": available_resources,
-                "agents": [
-                    {
-                        "name": a["name"],
-                        "waiting": a["waiting"],
-                        "fullfilled": a["fullfilled"],
-                        "bid": round(a.get("bid", 0), 3),
-                        "demand": a["demand"],
-                        "allocated": a["allocated"],
-                        "priority": a.get("priority_old", 1),
-                        "ethics_score": round(a.get("ethics_score", 0), 2),
-                        "reasons": explain_agent_reason(a),
-                    }
-                    for a in agents
-                ]
-            }
-
-            # send to all clients
-            for ws in list(clients):
-                try:
-                    await ws.send(json.dumps(payload))
-                except Exception as exc:
-                    print("WebSocket send failed, removing client:", exc)
-                    clients.discard(ws)
-
-            t += 1
-
-            if t >= config["rounds"]:
+        try:
+            state = create_simulation()
+            for round_number in range(1, run_config["rounds"] + 1):
+                if not is_running():
+                    break
+                await broadcast(run_round(state, round_number))
+                if round_number < run_config["rounds"]:
+                    await asyncio.sleep(run_config["interval"])
+            await broadcast({"type": "simulation_complete"})
+        except (OSError, json.JSONDecodeError, ValueError, KeyError, TypeError) as error:
+            print(f"Simulation failed: {error}")
+            await broadcast({"type": "simulation_error", "error": str(error)})
+        finally:
+            with config_lock:
                 config["running"] = False
-                t = 0
-
-            await asyncio.sleep(config["interval"])
-        else:
-            await asyncio.sleep(0.5)
 
 
-# ---------- HTTP SERVER ----------
 class Handler(BaseHTTPRequestHandler):
-    def _set_cors_headers(self):
+    def _set_cors_headers(self) -> None:
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
-    def do_OPTIONS(self):
+    def _send_json(self, status: int, payload: dict[str, Any]) -> None:
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self._set_cors_headers()
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self) -> None:
         self.send_response(200)
         self._set_cors_headers()
         self.end_headers()
 
-    def _parse_int(self, value, default):
+    def do_POST(self) -> None:
+        if self.path != "/run":
+            self._send_json(404, {"error": "Not found."})
+            return
+
         try:
-            if value is None:
-                return default
-            return int(value)
-        except (ValueError, TypeError):
-            return default
+            content_length = int(self.headers.get("Content-Length", "0"))
+            if content_length < 1 or content_length > 4096:
+                raise ValueError("Request body must be between 1 and 4096 bytes.")
+            request = json.loads(self.rfile.read(content_length))
+            if not isinstance(request, dict):
+                raise ValueError("Request body must be a JSON object.")
+            rounds = request.get("rounds", 5)
+            interval = request.get("interval", 1)
+            if type(rounds) is not int or not 1 <= rounds <= 50:
+                raise ValueError("rounds must be an integer between 1 and 50.")
+            if (
+                not isinstance(interval, (int, float))
+                or isinstance(interval, bool)
+                or not 0.1 <= interval <= 20
+            ):
+                raise ValueError("interval must be between 0.1 and 20 seconds.")
+            load_configuration()
+        except (ValueError, json.JSONDecodeError, OSError) as error:
+            self._send_json(400, {"error": str(error)})
+            return
 
-    def do_POST(self):
-        if self.path == "/run":
-            content_length = int(self.headers['Content-Length'])
-            body = self.rfile.read(content_length)
+        with config_lock:
+            if config["running"]:
+                self._send_json(409, {"error": "A simulation is already running."})
+                return
+            config.update(rounds=rounds, interval=float(interval), running=True)
+        self._send_json(202, {"status": "started"})
 
-            data = json.loads(body or "{}")
-
-            config["rounds"] = self._parse_int(data.get("rounds"), 20)
-            config["interval"] = self._parse_int(data.get("interval"), 1)
-            config["running"] = True
-
-            print("Simulation started", config)
-
-            self.send_response(200)
-            self._set_cors_headers()
-            self.end_headers()
-            self.wfile.write(b"Started")
-
-        else:
-            self.send_response(404)
-            self._set_cors_headers()
-            self.end_headers()
-
-    def do_GET(self):
-        if self.path == "/system-state":
-            data = load_data()
-            available_resources = data.get("system_resources", {}).get("avilabe", 0)
-            
-            response = {
-                "available_resources": available_resources
-            }
-            
-            self.send_response(200)
-            self._set_cors_headers()
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps(response).encode())
-        else:
-            self.send_response(404)
-            self._set_cors_headers()
-            self.end_headers()
+    def do_GET(self) -> None:
+        if self.path != "/system-state":
+            self._send_json(404, {"error": "Not found."})
+            return
+        try:
+            data = load_configuration()
+        except (OSError, json.JSONDecodeError, ValueError) as error:
+            self._send_json(500, {"error": str(error)})
+            return
+        self._send_json(
+            200,
+            {
+                "available_resources": data["system_resources"],
+                "agents": data["agents"],
+            },
+        )
 
 
-def start_http():
+def start_http() -> None:
     server = HTTPServer(("localhost", 8001), Handler)
     print("HTTP server running at http://localhost:8001")
     server.serve_forever()
 
 
-# ---------- MAIN ----------
-async def main():
+async def main() -> None:
     threading.Thread(target=start_http, daemon=True).start()
-
     async with serve(ws_handler, "localhost", 8765):
         print("WebSocket running at ws://localhost:8765")
         await simulation_loop()
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
