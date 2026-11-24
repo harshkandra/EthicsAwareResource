@@ -31,7 +31,7 @@ class AgentMemory:
 
 
 @dataclass
-class AgentProposal:
+class AgentProposal: 
     request: dict[str, int]
     bid: float
     waiting_rounds: int
