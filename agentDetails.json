@@ -1,82 +1,98 @@
 {
   "system_resources": {
-    "avilabe": 200
+    "cpu": 100,
+    "ram_gb": 256,
+    "gpu": 8,
+    "network_mbps": 1000,
+    "storage_iops": 10000
   },
   "agents": [
     {
-      "id": 11,
-      "name": "Agent 1",
-      "priority_old": 100.02000000000001,
-      "priority_new": 0,
-      "waiting": 41,
-      "fullfilled": 48,
-      "demand": 146,
-      "allocated": 0,
-      "bid": 170.2538977078677,
-      "starvation_count": 1,
-      "need_score": 146,
-      "fairness_score": -7,
-      "ethics_score": 171.22
+      "id": 1,
+      "name": "Coding Agent",
+      "objective": "Maximize code generation, compilation, and testing throughput.",
+      "strategy": "Throughput first; flex CPU and storage before GPU.",
+      "requirements": {
+        "cpu": 40,
+        "ram_gb": 64,
+        "gpu": 1,
+        "network_mbps": 150,
+        "storage_iops": 2000
+      },
+      "minimums": {
+        "cpu": 20,
+        "ram_gb": 32,
+        "gpu": 1,
+        "network_mbps": 75,
+        "storage_iops": 1000
+      },
+      "weights": {
+        "cpu": 0.3,
+        "ram_gb": 0.2,
+        "gpu": 0.15,
+        "network_mbps": 0.1,
+        "storage_iops": 0.25
+      },
+      "base_priority": 1.0,
+      "workload_pattern": [0.85, 1.0, 0.75, 0.95]
     },
     {
-      "id": 22,
-      "name": "Agent 2",
-      "priority_old": 100,
-      "priority_new": 0,
-      "waiting": 40,
-      "fullfilled": 49,
-      "demand": 115,
-      "allocated": 115,
-      "bid": 148.6532479556455,
-      "starvation_count": 0,
-      "need_score": 115,
-      "fairness_score": -9,
-      "ethics_score": 147.01
+      "id": 2,
+      "name": "ML Training Agent",
+      "objective": "Maximize model training and inference performance.",
+      "strategy": "Accelerator first; prioritize GPU and memory.",
+      "requirements": {
+        "cpu": 35,
+        "ram_gb": 128,
+        "gpu": 6,
+        "network_mbps": 400,
+        "storage_iops": 4000
+      },
+      "minimums": {
+        "cpu": 18,
+        "ram_gb": 64,
+        "gpu": 3,
+        "network_mbps": 200,
+        "storage_iops": 2000
+      },
+      "weights": {
+        "cpu": 0.1,
+        "ram_gb": 0.25,
+        "gpu": 0.45,
+        "network_mbps": 0.08,
+        "storage_iops": 0.12
+      },
+      "base_priority": 1.05,
+      "workload_pattern": [1.0, 0.9, 0.8, 1.0]
     },
     {
-      "id": 33,
-      "name": "Agent 3",
-      "priority_old": 79.1,
-      "priority_new": 0,
-      "waiting": 40,
-      "fullfilled": 49,
-      "demand": 18,
-      "allocated": 0,
-      "bid": 78.15195485509281,
-      "starvation_count": 2,
-      "need_score": 18,
-      "fairness_score": -9,
-      "ethics_score": 79.1
-    },
-    {
-      "id": 44,
-      "name": "Agent 44444",
-      "priority_old": 100.01,
-      "priority_new": 0,
-      "waiting": 41,
-      "fullfilled": 48,
-      "demand": 76,
-      "allocated": 76,
-      "bid": 131.83996875013702,
-      "starvation_count": 0,
-      "need_score": 76,
-      "fairness_score": -7,
-      "ethics_score": 122.23000000000002
-    },
-    {
-      "id": 55,
-      "name": "Agent 5",
-      "priority_old": 51.59999999999998,
-      "priority_new": 0,
-      "waiting": 37,
-      "fullfilled": 52,
-      "demand": 16,
-      "allocated": 0,
-      "bid": 50.65656636028705,
-      "starvation_count": 2,
-      "need_score": 16,
-      "fairness_score": -15,
-      "ethics_score": 51.59999999999998
+      "id": 3,
+      "name": "DevOps Agent",
+      "objective": "Maintain deployment reliability, infrastructure availability, and monitoring.",
+      "strategy": "Reliability first; prioritize network and storage headroom.",
+      "requirements": {
+        "cpu": 25,
+        "ram_gb": 64,
+        "gpu": 1,
+        "network_mbps": 600,
+        "storage_iops": 5000
+      },
+      "minimums": {
+        "cpu": 13,
+        "ram_gb": 32,
+        "gpu": 1,
+        "network_mbps": 300,
+        "storage_iops": 2500
+      },
+      "weights": {
+        "cpu": 0.12,
+        "ram_gb": 0.1,
+        "gpu": 0.03,
+        "network_mbps": 0.35,
+        "storage_iops": 0.4
+      },
+      "base_priority": 1.1,
+      "workload_pattern": [0.95, 1.0, 0.9, 1.0]
     }
   ]
 }
